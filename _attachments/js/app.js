@@ -26,10 +26,23 @@
 		
 		function createItemEl(item){
 			var el = $(itemTemplate.apply(item));
+			
 			var toggle = el.find('.toggle');
 			toggle.on('change', function(){
 				item.completed = toggle.is(':checked');
 				update(item);
+			});
+			
+			el.find('.destroy').click(function(){
+				$.ajax({
+					type: 'DELETE',
+					url: `/couchtodo/${item._id}?rev=${item._rev}`,
+					dataType: 'json'
+				}).then(function(){
+					el.remove();
+					var index = items.indexOf(item);
+					items.splice(index, 1);
+				});
 			});
 			return el;
 		}
@@ -58,8 +71,10 @@
 			type: 'PUT',
 			contentType: 'application/json',
 			dataType: 'json',
-			url: '/couchtodo/' + item._id, 
+			url: `/couchtodo/${item._id}`, 
 			data: JSON.stringify(item)
+		}).then(function(response){
+			item._rev = response.rev;
 		});
 	}
 	
@@ -80,6 +95,7 @@
 			data: JSON.stringify(item)
 		}).then(function(response){
 			item._id = response.id;
+			item._rev = response.rev;
 			items.unshift(item);
 			newItemInput.val('');
 		});
