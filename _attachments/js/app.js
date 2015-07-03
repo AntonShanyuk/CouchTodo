@@ -15,10 +15,18 @@
 		items.forEach(function(item){
 			var itemEl = createItemEl(item);
 			todoList.append(itemEl);
-			var observer = function(){
-				var newItemEl = createItemEl(item);
-				itemEl.replaceWith(newItemEl);
-				itemEl = newItemEl;
+			var observer = function(updates){
+				var onlyRevisionUpdates = updates.every(function(update){
+					return update.name == '_rev';
+				});
+				if(onlyRevisionUpdates){
+					return;
+				}
+				update(item).then(function(){
+					var newItemEl = createItemEl(item);
+					itemEl.replaceWith(newItemEl);
+					itemEl = newItemEl;
+				});
 			};
 			Object.observe(item, observer);
 			itemObservers.push({item: item, observer: observer});
@@ -30,7 +38,6 @@
 			var toggle = el.find('.toggle');
 			toggle.on('change', function(){
 				item.completed = toggle.is(':checked');
-				update(item);
 			});
 			
 			el.find('.destroy').click(function(){
@@ -44,6 +51,17 @@
 					items.splice(index, 1);
 				});
 			});
+			
+			el.find('label').dblclick(function(){
+				var editInput = el.find('.edit');
+				editInput.val(item.text);
+				el.addClass('editing');
+				el.find('.edit-form').on('submit', function(){
+					item.text = editInput.val();
+					return false;
+				})
+			});
+			
 			return el;
 		}
 	});
